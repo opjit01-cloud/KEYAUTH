@@ -22,11 +22,15 @@ function handleGoogleLogin() {
     const statusText = document.getElementById("google-signin-status");
     
     if (btn) btn.disabled = true;
-    if (statusText) statusText.innerText = "Connecting to Google...";
+    if (statusText) {
+        statusText.style.display = "block";
+        statusText.innerText = "Opening Google Sign-In...";
+    }
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.addScope('email');
     provider.addScope('profile');
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     firebase.auth().signInWithPopup(provider)
         .then((result) => {
@@ -52,15 +56,19 @@ function handleGoogleLogin() {
                 if (statusText) statusText.innerText = "Success! Redirecting...";
                 window.location.href = data.redirect || '../app/';
             } else {
-                alert(data.message || 'Login failed. Please try again.');
+                alert("Login Error: " + (data.message || 'Unknown server error.'));
                 if (btn) btn.disabled = false;
                 if (statusText) statusText.innerText = "";
             }
         })
         .catch((error) => {
             console.error("Firebase Auth Error:", error);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                alert("Google Sign-In Error: " + error.message);
+            if (error.code === 'auth/unauthorized-domain') {
+                alert("Firebase Domain Whitelist Required!\n\nPlease go to Firebase Console -> Authentication -> Settings -> Authorized domains -> click 'Add domain' and add:\n" + window.location.hostname);
+            } else if (error.code === 'auth/popup-blocked') {
+                alert("Popup was blocked by your browser! Please allow popups for this site and try again.");
+            } else if (error.code !== 'auth/popup-closed-by-user') {
+                alert("Google Sign-In Error (" + error.code + "): " + error.message);
             }
             if (btn) btn.disabled = false;
             if (statusText) statusText.innerText = "";

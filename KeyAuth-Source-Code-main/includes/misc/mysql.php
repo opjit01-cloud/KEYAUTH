@@ -26,53 +26,47 @@ function query($query, $args = [], $types = null)
                 $port = intval($databasePort);
         }
 
-        // use read-only database replica, for lower latency in regions far away from the primary database region
-        if(strtolower(substr($query, 0, 6)) == "select" && isset($readOnlyRegions[$_SERVER['SERVER_ADDR']])) {
-                if (!$readOnlyConnection) {
-                        $readOnlyConnection = new \mysqli();
+        if (!$connection) {
+                $connection = new \mysqli();
 
-                        $roHost = $readOnlyRegions[$_SERVER['SERVER_ADDR']]["host"];
-                        $roPort = 3306;
-                        if (strpos($roHost, ':') !== false) {
-                                $roParts = explode(':', $roHost);
-                                $roHost = $roParts[0];
-                                $roPort = intval($roParts[1]);
-                        }
-
-                        $flags = 0;
-                        if ($mysqlRequireSSL) {
-                                $readOnlyConnection->ssl_set(NULL, NULL, NULL, NULL, NULL);
-                                $flags = MYSQLI_CLIENT_SSL;
-                        }
-
-                        $readOnlyConnection->real_connect($roHost, $readOnlyRegions[$_SERVER['SERVER_ADDR']]["username"], $readOnlyRegions[$_SERVER['SERVER_ADDR']]["password"], $databaseName, $roPort, NULL, $flags);
-
-                        if ($readOnlyConnection->connect_error)
-                                die("Database Connection Error: " . $readOnlyConnection->connect_error);
-
-                        $readOnlyConnection->set_charset('utf8mb4');
+                $flags = 0;
+                if ($mysqlRequireSSL) {
+                        $connection->ssl_set(NULL, NULL, NULL, NULL, NULL);
+                        $flags = MYSQLI_CLIENT_SSL;
                 }
-                $connectionToUse = $readOnlyConnection;
-        }
-        else {
-                if (!$connection) {
-                        $connection = new \mysqli();
 
-                        $flags = 0;
-                        if ($mysqlRequireSSL) {
-                                $connection->ssl_set(NULL, NULL, NULL, NULL, NULL);
-                                $flags = MYSQLI_CLIENT_SSL;
+                $connection->real_connect($host, $databaseUsername, $databasePassword, $databaseName, $port, NULL, $flags);
+
+                if ($connection->connect_error)
+                        die("Database Connection Error: " . $connection->connect_error);
+
+                $connection->set_charset('utf8mb4');
+
+                // Auto-create all tables if 'accounts' table does not exist
+                static $autoInitDone = false;
+                if (!$autoInitDone) {
+                        $autoInitDone = true;
+                        $chk = @$connection->query("SHOW TABLES LIKE 'accounts'");
+                        if ($chk && $chk->num_rows === 0) {
+                                $sqlDoc = (isset($_SERVER['DOCUMENT_ROOT']) && !empty($_SERVER['DOCUMENT_ROOT'])) ? $_SERVER['DOCUMENT_ROOT'] : __DIR__ . '/../..';
+                                $sqlFile = $sqlDoc . '/db_structure.sql';
+                                if (!file_exists($sqlFile)) {
+                                        $sqlFile = __DIR__ . '/../../db_structure.sql';
+                                }
+                                if (file_exists($sqlFile)) {
+                                        $rawSql = file_get_contents($sqlFile);
+                                        $stmts = preg_split('/;\s*[\r\n]+/', $rawSql);
+                                        foreach ($stmts as $st) {
+                                                $trimmed = trim($st);
+                                                if (!empty($trimmed)) {
+                                                        @$connection->query($trimmed);
+                                                }
+                                        }
+                                }
                         }
-
-                        $connection->real_connect($host, $databaseUsername, $databasePassword, $databaseName, $port, NULL, $flags);
-
-                        if ($connection->connect_error)
-                                die("Database Connection Error: " . $connection->connect_error);
-
-                        $connection->set_charset('utf8mb4');
                 }
-                $connectionToUse = $connection;
         }
+        $connectionToUse = $connection;
 
         if ($types === null && $args !== [])
                 $types = str_repeat('s', count($args));
