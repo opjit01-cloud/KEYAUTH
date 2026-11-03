@@ -1,15 +1,24 @@
 <?php
-include_once (($_SERVER['DOCUMENT_ROOT'] == "/usr/share/nginx/html/panel" || $_SERVER['DOCUMENT_ROOT'] == "/usr/share/nginx/html/api") ? "/usr/share/nginx/html" : $_SERVER['DOCUMENT_ROOT']) . '/includes/credentials.php'; // reference credentials
-
-if (!class_exists('Redis')) {
-        die('Redis isn\'t installed. You must install Redis server and Redis PHP extension.<br><br>Or if your configuration can\'t install Redis, remove code containing Redis from /includes/misc/cache.php');
+$docRoot = (isset($_SERVER['DOCUMENT_ROOT']) && ($_SERVER['DOCUMENT_ROOT'] == "/usr/share/nginx/html/panel" || $_SERVER['DOCUMENT_ROOT'] == "/usr/share/nginx/html/api")) ? "/usr/share/nginx/html" : ($_SERVER['DOCUMENT_ROOT'] ?? __DIR__ . '/..');
+if (file_exists($docRoot . '/includes/credentials.php')) {
+    include_once $docRoot . '/includes/credentials.php';
+} else {
+    include_once __DIR__ . '/credentials.php';
 }
 
-$redis = new Redis();
-$redis->connect('127.0.0.1', 6379);
+global $redis;
 
-global $redisPass;
-
-if(!empty($redisPass)) {
-        $redis->auth($redisPass);
+if (!class_exists('Redis')) {
+    $redis = null;
+} else {
+    try {
+        $redis = new Redis();
+        $redis->connect('127.0.0.1', 6379, 1.5);
+        global $redisPass;
+        if(!empty($redisPass)) {
+            $redis->auth($redisPass);
+        }
+    } catch (\Throwable $e) {
+        $redis = null;
+    }
 }
