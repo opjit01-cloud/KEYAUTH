@@ -1,6 +1,11 @@
 <?php
 
-include_once (($_SERVER['DOCUMENT_ROOT'] == "/usr/share/nginx/html/panel" || $_SERVER['DOCUMENT_ROOT'] == "/usr/share/nginx/html/api") ? "/usr/share/nginx/html" : $_SERVER['DOCUMENT_ROOT']) . '/includes/credentials.php'; // reference credentials
+$credFile = __DIR__ . '/../credentials.php';
+if (file_exists($credFile)) {
+    include_once $credFile;
+} else if (isset($_SERVER['DOCUMENT_ROOT']) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/includes/credentials.php')) {
+    include_once $_SERVER['DOCUMENT_ROOT'] . '/includes/credentials.php';
+}
 
 foreach (glob(__DIR__ . "/*.php") as $filename) {
     include $filename;
