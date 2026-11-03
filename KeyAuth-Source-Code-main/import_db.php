@@ -33,27 +33,20 @@ if (!file_exists($sqlFile)) {
 }
 
 $sql = file_get_contents($sqlFile);
-$queries = preg_split('/;\s*[\r\n]+/', $sql);
 
-$successCount = 0;
-$errorCount = 0;
-
-foreach ($queries as $q) {
-    $trimmed = trim($q);
-    if (!empty($trimmed)) {
-        if ($conn->query($trimmed)) {
-            $successCount++;
-        } else {
-            $errorCount++;
-            echo "Error executing query: " . htmlspecialchars($conn->error) . "<br>";
+if ($conn->multi_query($sql)) {
+    do {
+        if ($res = $conn->store_result()) {
+            $res->free();
         }
-    }
+    } while ($conn->more_results() && $conn->next_result());
+    echo "Multi-query executed successfully!<br>";
+} else {
+    echo "Multi-query error: " . htmlspecialchars($conn->error) . "<br>";
 }
 
-echo "Done! Executed $successCount statements ($errorCount errors).<br>";
-
 $res = $conn->query("SHOW TABLES;");
-echo "<h3>Current Tables in Database:</h3><ul>";
+echo "<h3>Current Tables in Database (" . $res->num_rows . "):</h3><ul>";
 while ($row = $res->fetch_array()) {
     echo "<li>" . htmlspecialchars($row[0]) . "</li>";
 }
