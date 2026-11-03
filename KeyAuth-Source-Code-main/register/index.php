@@ -167,7 +167,7 @@ set_exception_handler(function ($exception) {
                                     <div class="h-1 bg-gray-200" id="pass_strength_three"></div>
                                     <div class="h-1 bg-gray-200" id="pass_strength_four"></div>
                                 </div>
-                                <p>It’s better to have:</p>
+                                <p>Itâ€™s better to have:</p>
                                 <ul>
                                     <li class="flex items-center mb-1">
                                         <svg class="w-3.5 h-3.5 mr-2 text-green-400  " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
@@ -388,7 +388,7 @@ set_exception_handler(function ($exception) {
             </div>
             <hr class="my-6 border-[#0f0f17] sm:mx-auto lg:my-8">
 
-            <span class="block mb-6 text-sm text-gray-400 lg:mb-0 text-center">© 2020 - 2023 <a href="../" class="hover:underline">KeyAuth LLC</a>. All Rights Reserved.
+            <span class="block mb-6 text-sm text-gray-400 lg:mb-0 text-center">Â© 2020 - 2023 <a href="../" class="hover:underline">KeyAuth LLC</a>. All Rights Reserved.
             </span>
         </div>
     </footer>
@@ -511,10 +511,6 @@ set_exception_handler(function ($exception) {
                                                 <p>KeyAuth API documentation can be seen here <a href=\"https://keyauth.readme.io/\">https://keyauth.readme.io/</a></p>
                                                 <p>Please leave a review on TrustPilot if you enjoy KeyAuth <a href=\"https://trustpilot.com/review/keyauth.com\">https://trustpilot.com/review/keyauth.com</a></p>
                                                 <p style=\"margin-top: 20px;\">Thanks,<br><b>KeyAuth.</b></p>
-                                            <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="../auth/firebase-auth.js"></script>
 </body>
                                         </html>";
         misc\email\send($username, $email, $htmlContent, "Welcome to KeyAuth");
