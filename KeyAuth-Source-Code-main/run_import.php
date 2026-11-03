@@ -2,6 +2,9 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Prevent PHP 8.2 from dying on query errors
+mysqli_report(MYSQLI_REPORT_OFF);
+
 require_once __DIR__ . '/includes/credentials.php';
 
 $port = !empty($databasePort) ? intval($databasePort) : 3306;
@@ -24,48 +27,39 @@ if ($conn->connect_error) {
     die("Connection error: " . $conn->connect_error);
 }
 
-$possiblePaths = [
-    __DIR__ . '/db_structure.sql',
-    __DIR__ . '/KeyAuth-Source-Code-main/db_structure.sql',
-    '/var/www/html/db_structure.sql',
-    '/var/www/html/KeyAuth-Source-Code-main/db_structure.sql'
-];
-
-$sqlFile = null;
-foreach ($possiblePaths as $p) {
-    if (file_exists($p)) {
-        $sqlFile = $p;
-        break;
-    }
+$sqlFile = __DIR__ . '/db_structure.sql';
+if (!file_exists($sqlFile)) {
+    die("db_structure.sql not found!");
 }
-
-if (!$sqlFile) {
-    die("db_structure.sql not found in any path!");
-}
-
-echo "Found SQL file at: $sqlFile (" . filesize($sqlFile) . " bytes)<br>";
 
 $sql = file_get_contents($sqlFile);
-$queries = preg_split('/;\s*[\r\n]+/', $sql);
+// Clean sql comments and transactions
+$sql = preg_replace('/^\/\*!.*?\*\/;/m', '', $sql);
 
-$created = 0;
+$queries = explode(";\n", str_replace("\r\n", "\n", $sql));
+
+$success = 0;
+$fail = 0;
+
 foreach ($queries as $q) {
     $q = trim($q);
     if (!empty($q)) {
         if ($conn->query($q)) {
-            $created++;
+            $success++;
         } else {
-            echo "Query warning: " . htmlspecialchars($conn->error) . "<br>";
+            $fail++;
+            echo "Query Notice: " . htmlspecialchars($conn->error) . "<br>";
         }
     }
 }
 
-echo "<b>SUCCESS: Executed $created queries!</b><br>";
+$conn->query("COMMIT;");
 
 $res = $conn->query("SHOW TABLES;");
-echo "<h3>Total Tables in Database: " . $res->num_rows . "</h3>";
+echo "<h2>TOTAL TABLES IN DATABASE: " . $res->num_rows . "</h2><ul>";
 while ($r = $res->fetch_array()) {
-    echo $r[0] . " | ";
+    echo "<li>" . htmlspecialchars($r[0]) . "</li>";
 }
+echo "</ul>";
 $conn->close();
 ?>
