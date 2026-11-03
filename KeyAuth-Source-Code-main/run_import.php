@@ -2,7 +2,6 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Prevent PHP 8.2 from dying on query errors
 mysqli_report(MYSQLI_REPORT_OFF);
 
 require_once __DIR__ . '/includes/credentials.php';
@@ -27,15 +26,17 @@ if ($conn->connect_error) {
     die("Connection error: " . $conn->connect_error);
 }
 
+// Crucial for Aiven MySQL 8.4: Disable sql_require_primary_key for this session!
+$conn->query("SET SESSION sql_require_primary_key = 0;");
+$conn->query("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';");
+$conn->query("SET foreign_key_checks = 0;");
+
 $sqlFile = __DIR__ . '/db_structure.sql';
 if (!file_exists($sqlFile)) {
     die("db_structure.sql not found!");
 }
 
 $sql = file_get_contents($sqlFile);
-// Clean sql comments and transactions
-$sql = preg_replace('/^\/\*!.*?\*\/;/m', '', $sql);
-
 $queries = explode(";\n", str_replace("\r\n", "\n", $sql));
 
 $success = 0;
@@ -48,7 +49,6 @@ foreach ($queries as $q) {
             $success++;
         } else {
             $fail++;
-            echo "Query Notice: " . htmlspecialchars($conn->error) . "<br>";
         }
     }
 }
